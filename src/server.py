@@ -4,12 +4,12 @@ from starlette.applications import Starlette
 from starlette.responses import HTMLResponse, JSONResponse
 from starlette.routing import Route, Mount
 from fastmcp import FastMCP
-from src.whoop_client import WhoopClient
-from src.tools.overview import register_overview_tools
-from src.tools.sleep import register_sleep_tools
-from src.tools.recovery import register_recovery_tools
-from src.tools.strain import register_strain_tools
-from src.tools.healthspan import register_healthspan_tools
+from whoop_client import WhoopClient
+from tools.overview import register_overview_tools
+from tools.sleep import register_sleep_tools
+from tools.recovery import register_recovery_tools
+from tools.strain import register_strain_tools
+from tools.healthspan import register_healthspan_tools
 
 CLIENT_ID = os.getenv("WHOOP_CLIENT_ID")
 CLIENT_SECRET = os.getenv("WHOOP_CLIENT_SECRET")
