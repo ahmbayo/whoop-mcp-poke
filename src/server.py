@@ -1,107 +1,50 @@
-"""
-WHOOP MCP Server - Poke Compatible
-Based on InteractionCo/mcp-server-template
-"""
 import os
+import uvicorn
+from starlette.applications import Starlette
+from starlette.responses import HTMLResponse, JSONResponse
+from starlette.routing import Route, Mount
 from fastmcp import FastMCP
+from src.whoop_client import WhoopClient
+from src.tools.overview import register_overview_tools
+from src.tools.sleep import register_sleep_tools
+from src.tools.recovery import register_recovery_tools
+from src.tools.strain import register_strain_tools
+from src.tools.healthspan import register_healthspan_tools
 
-# Initialize FastMCP
+CLIENT_ID = os.getenv("WHOOP_CLIENT_ID")
+CLIENT_SECRET = os.getenv("WHOOP_CLIENT_SECRET")
+REDIRECT_URI = os.getenv("WHOOP_REDIRECT_URI", "https://whoop-mcp-ahmed.onrender.com/callback")
+
 mcp = FastMCP("WHOOP MCP Server")
+register_overview_tools(mcp)
+register_sleep_tools(mcp)
+register_recovery_tools(mcp)
+register_strain_tools(mcp)
+register_healthspan_tools(mcp)
 
-# WHOOP credentials from environment
-WHOOP_EMAIL = os.getenv("WHOOP_EMAIL")
-WHOOP_PASSWORD = os.getenv("WHOOP_PASSWORD")
+async def callback(request):
+    code = request.query_params.get("code")
+    if not code:
+        return HTMLResponse("Error: No code provided", status_code=400)
+    client = WhoopClient()
+    success = client.exchange_code(code)
+    if success:
+        return HTMLResponse("WHOOP Connected Successfully! You can close this tab now.")
+    return HTMLResponse("Failed to exchange token with WHOOP", status_code=500)
 
-# Import WHOOP modules (delayed to avoid circular imports)
-import sys
-sys.path.insert(0, os.path.dirname(__file__))
+async def health(request):
+    return JSONResponse({"status": "ok"})
 
-from whoop_client import WhoopClient
-from tools.whoop import (
-    handle_overview,
-    handle_sleep,
-    handle_recovery,
-    handle_strain,
-    handle_healthspan
+mcp_app = mcp.get_app() if hasattr(mcp, "get_app") else mcp._app
+
+app = Starlette(
+    routes=[
+        Route("/callback", endpoint=callback, methods=["GET"]),
+        Route("/health", endpoint=health, methods=["GET"]),
+        Mount("/", app=mcp_app),
+    ]
 )
 
-# Global WHOOP client
-_whoop_client = None
-
-def get_whoop_client():
-    """Get or create WHOOP client instance."""
-    global _whoop_client
-    if _whoop_client is None:
-        _whoop_client = WhoopClient(email=WHOOP_EMAIL, password=WHOOP_PASSWORD)
-    return _whoop_client
-
-
-@mcp.tool()
-def test_connection() -> str:
-    """Test tool to verify MCP server is working."""
-    return "✅ MCP Server is working! Connection successful."
-
-
-@mcp.tool()
-async def whoop_get_overview(date: str = None) -> str:
-    """Get comprehensive Whoop overview data for a specific date."""
-    client = get_whoop_client()
-    result = await handle_overview(client, date)
-    if result.get("content"):
-        return result["content"][0]["text"]
-    return "No data available"
-
-
-@mcp.tool()
-async def whoop_get_sleep(date: str = None) -> str:
-    """Get detailed sleep analysis and performance metrics."""
-    client = get_whoop_client()
-    result = await handle_sleep(client, date)
-    if result.get("content"):
-        return result["content"][0]["text"]
-    return "No data available"
-
-
-@mcp.tool()
-async def whoop_get_recovery(date: str = None) -> str:
-    """Get recovery analysis with HRV, RHR, and trends."""
-    client = get_whoop_client()
-    result = await handle_recovery(client, date)
-    if result.get("content"):
-        return result["content"][0]["text"]
-    return "No data available"
-
-
-@mcp.tool()
-async def whoop_get_strain(date: str = None) -> str:
-    """Get strain analysis with heart rate zones and activities."""
-    client = get_whoop_client()
-    result = await handle_strain(client, date)
-    if result.get("content"):
-        return result["content"][0]["text"]
-    return "No data available"
-
-
-@mcp.tool()
-async def whoop_get_healthspan(date: str = None) -> str:
-    """Get biological age and pace of aging metrics."""
-    client = get_whoop_client()
-    result = await handle_healthspan(client, date)
-    if result.get("content"):
-        return result["content"][0]["text"]
-    return "No data available"
-
-
-# Run the server - matching Poke template exactly
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
-    host = "0.0.0.0"
-    
-    print(f"🚀 Starting WHOOP MCP Server on {host}:{port}")
-    
-    mcp.run(
-        transport="http",
-        host=host,
-        port=port,
-        stateless_http=True
-    )
+if _name_ == "_main_":
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
