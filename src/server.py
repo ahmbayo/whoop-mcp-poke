@@ -1,6 +1,6 @@
 import os
 import sys
-sys.path.insert(0, os.path.dirname(os.path.abspath(_file_)))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import uvicorn
 from starlette.applications import Starlette
 from starlette.responses import HTMLResponse, JSONResponse
@@ -15,9 +15,7 @@ from tools.healthspan import register_healthspan_tools
 
 CLIENT_ID = os.getenv("WHOOP_CLIENT_ID")
 CLIENT_SECRET = os.getenv("WHOOP_CLIENT_SECRET")
-REDIRECT_URI = os.getenv("WHOOP_REDIRECT_URI", "https://whoop-mcp-ahmed.onrender.com/callback
-")
-
+REDIRECT_URI = os.getenv("WHOOP_REDIRECT_URI","https://whoop-mcp-ahmed.onrender.com/callback")
 mcp = FastMCP("WHOOP MCP Server")
 register_overview_tools(mcp)
 register_sleep_tools(mcp)
@@ -48,6 +46,6 @@ app = Starlette(
     ]
 )
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
