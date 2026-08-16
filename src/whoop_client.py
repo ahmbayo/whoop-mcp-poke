@@ -5,7 +5,7 @@ import asyncio
 import logging
 import time
 from typing import Optional, Dict, Any
-import from curl_cffi import requests as httpx
+from curl_cffi import requests as httpx
 
 logger = logging.getLogger(__name__)
 
